@@ -1,0 +1,47 @@
+{
+  "name": "competitorpulse",
+  "version": "0.1.0",
+  "description": "Competitive-intel change-digest agent + MCP server. Watch competitor sites, changelogs, blogs, and pricing pages; get meaningful Markdown digests.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "competitorpulse": "dist/cli.js",
+    "competitorpulse-mcp": "dist/mcp-server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "test": "tsx --test tests/diff.test.ts tests/classify.test.ts tests/fetch-allow.test.ts",
+    "cli": "tsx src/cli.ts",
+    "mcp": "tsx src/mcp-server.ts",
+    "start": "tsx src/cli.ts"
+  },
+  "keywords": [
+    "competitive-intelligence",
+    "mcp",
+    "changelog",
+    "digest",
+    "competitor-monitoring"
+  ],
+  "author": "Vinay Vik",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "cheerio": "^1.0.0",
+    "commander": "^13.1.0",
+    "diff": "^7.0.0",
+    "fast-xml-parser": "^5.0.9",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/diff": "^6.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

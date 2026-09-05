@@ -1,0 +1,31 @@
+# CompetitorPulse example config — fictional competitors for local demos.
+# Copy to ./competitors.yaml (or set COMPETITORPULSE_CONFIG).
+
+fetchDelayMs: 750
+userAgent: "CompetitorPulse/0.1 (+https://github.com/vk-ai/competitorpulse; polite competitive-intel bot)"
+
+competitors:
+  - id: northstar-analytics
+    name: Northstar Analytics
+    notes: "Fictional BI / analytics SaaS — watch pricing + changelog."
+    sources:
+      website: "https://example.com"
+      changelog: "https://example.com"
+      pricing: "https://example.com"
+      # Prefer Atom/RSS when available; HTML blogs also work
+      blog: "https://www.w3.org/blog/feed/"
+
+  - id: riverbed-crm
+    name: Riverbed CRM
+    notes: "Fictional CRM — blog + marketing site."
+    sources:
+      website: "https://example.org"
+      pricing: "https://example.org"
+      blog: "https://hnrss.org/frontpage"
+
+  - id: lighthouse-docs
+    name: Lighthouse Docs
+    notes: "Fictional docs platform — changelog-oriented monitoring."
+    sources:
+      website: "https://example.net"
+      changelog: "https://example.net"
