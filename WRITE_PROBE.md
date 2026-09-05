@@ -1,1 +1,1 @@
-write-ok
+ok
