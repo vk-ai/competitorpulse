@@ -1,6 +1,8 @@
 /** Library entry — re-exports for programmatic use. */
 export { loadConfig, saveConfig, defaultConfigPath, defaultDataDir } from "./config.js";
 export { meaningfulDiff, contentHash } from "./diff.js";
+export { verifySemanticChange } from "./verify.js";
+export type { SemanticVerdict } from "./verify.js";
 export { classifyChange, summarizeChangeLocally } from "./classify.js";
 export { fetchNormalized, assertAllowedUrl, normalizeText } from "./fetch.js";
 export { runCheck } from "./check.js";

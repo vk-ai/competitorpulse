@@ -8,6 +8,7 @@ import type {
   Snapshot,
 } from "./types.js";
 import { contentHash, meaningfulDiff } from "./diff.js";
+import { verifySemanticChange } from "./verify.js";
 import { classifyChange, summarizeChangeLocally } from "./classify.js";
 import { fetchNormalized } from "./fetch.js";
 import { buildDigest } from "./digest.js";
@@ -78,14 +79,21 @@ async function checkSource(
       return { change: null };
     }
 
+    // Second pass: drop cosmetic false positives (dates, counters, CDN hashes, reorders)
+    const verdict = verifySemanticChange(prev.text, text, diff);
+    if (!verdict.meaningful) {
+      return { change: null };
+    }
+
     const category = classifyChange(sourceKind, text, diff.excerpt);
-    const summary = summarizeChangeLocally(
+    const local = summarizeChangeLocally(
       category,
       sourceKind,
       diff.addedLines,
       diff.removedLines,
       diff.excerpt
     );
+    const summary = `${local} — ${verdict.interpretation}`;
 
     const change: ChangeRecord = {
       id: randomUUID(),
