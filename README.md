@@ -12,7 +12,7 @@ CLI and MCP server. Self-host free MIT; hosted Pro later.
 | Pain | CompetitorPulse |
 |------|-----------------|
 | Manual site checks | Automated fetch + digest via CLI/MCP |
-| Noisy HTML diffs | Normalized text + noise filtering |
+| Noisy HTML diffs | Normalized text + two-pass semantic noise filtering |
 | Unclear meaning | Category labels + optional LLM summary |
 | Scattered notes | YAML config + Markdown digests on disk |
 
@@ -39,6 +39,18 @@ Env: COMPETITORPULSE_CONFIG, COMPETITORPULSE_DATA, OPENAI_API_KEY, OPENAI_MODEL.
 Stdio tools: list_competitors, add_competitor, remove_competitor, run_check, get_digest, get_changes.
 
 Start via package script mcp (tsx on src/mcp-server.ts). Configure Cursor mcp.json with cwd plus config/data env paths. After tsc build, run node on dist/mcp-server.js.
+
+## Two-pass semantic verify
+
+Line diffs still fire on date footers, view counters, and CDN asset hashes.
+After `meaningfulDiff`, CompetitorPulse runs a **second pass** that:
+
+- Normalizes dates / counters / hashed asset URLs
+- Detects pure sentence reorders
+- Attaches structured signals (`price_change`, `feature_mention`, …)
+- Adds a one-line **what it means** interpretation (no LLM required)
+
+Cosmetic churn is dropped before classify/store/digest — fewer Visualping-style false positives.
 
 ## Architecture
 
