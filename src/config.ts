@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import yaml from "js-yaml";
-import type { AppConfig, Competitor, CompetitorSources } from "./types.js";
+import type { AppConfig, Competitor, CompetitorSources, SourceFilter, SourceKind } from "./types.js";
+import { hasFilter, parseSourceFilter } from "./filters.js";
 import { DEFAULT_FETCH_DELAY_MS, DEFAULT_USER_AGENT } from "./types.js";
 
 function slugify(name: string): string {
@@ -17,18 +18,40 @@ function normalizeCompetitor(raw: Record<string, unknown>, index: number): Compe
   const id = String(raw.id ?? slugify(name));
   const sourcesRaw = (raw.sources ?? {}) as Record<string, unknown>;
   const sources: CompetitorSources = {};
+  const filters: Partial<Record<SourceKind, SourceFilter>> = {};
   for (const key of ["website", "changelog", "blog", "pricing"] as const) {
     const v = sourcesRaw[key];
     if (typeof v === "string" && v.trim()) {
       sources[key] = v.trim();
+    } else if (v && typeof v === "object" && !Array.isArray(v)) {
+      // Object form: { url, include?, exclude?, ignore? }
+      const obj = v as Record<string, unknown>;
+      const where = `competitor '${id}' source '${key}'`;
+      if (typeof obj.url !== "string" || !obj.url.trim()) {
+        throw new Error(`${where}: object form needs a 'url' string`);
+      }
+      sources[key] = obj.url.trim();
+      const filter = parseSourceFilter(obj, where);
+      if (filter) filters[key] = filter;
     }
   }
   return {
     id,
     name,
     sources,
+    ...(Object.keys(filters).length ? { filters } : {}),
     notes: typeof raw.notes === "string" ? raw.notes : undefined,
   };
+}
+
+/** Serialize sources back to YAML shape: plain URL, or object form when filtered. */
+function sourcesForYaml(c: Competitor): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, url] of Object.entries(c.sources) as [SourceKind, string][]) {
+    const filter = c.filters?.[key];
+    out[key] = hasFilter(filter) ? { url, ...filter } : url;
+  }
+  return out;
 }
 
 export function loadConfig(configPath: string): AppConfig {
@@ -66,7 +89,7 @@ export function saveConfig(configPath: string, config: AppConfig): void {
       id: c.id,
       name: c.name,
       notes: c.notes,
-      sources: c.sources,
+      sources: sourcesForYaml(c),
     })),
   };
   fs.writeFileSync(resolved, yaml.dump(payload, { lineWidth: 100 }), "utf8");

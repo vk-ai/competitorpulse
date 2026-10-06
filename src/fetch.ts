@@ -1,7 +1,8 @@
 import * as cheerio from "cheerio";
 import { XMLParser } from "fast-xml-parser";
-import type { SourceKind } from "./types.js";
+import type { SourceFilter, SourceKind } from "./types.js";
 import { DEFAULT_USER_AGENT } from "./types.js";
+import { applyIgnorePatterns } from "./filters.js";
 
 const BLOCKED_HOST_PATTERNS = [
   /(^|\.)linkedin\.com$/i,
@@ -68,19 +69,54 @@ export function normalizeText(text: string): string {
     .trim();
 }
 
-function extractHtmlMainText(html: string): string {
+/**
+ * Extract diffable text from HTML.
+ *
+ * Without filters: drop chrome (nav/header/footer), prefer main/article.
+ * With `exclude`: remove those elements first. With `include`: keep only the
+ * text of matching elements (in document order); chrome is not stripped, so
+ * an explicit `header .price` selector still works. Throws when `include`
+ * matches nothing, so selector drift surfaces as an error instead of a
+ * "everything was removed" diff.
+ */
+export function extractHtmlMainText(html: string, filter?: SourceFilter): string {
   const $ = cheerio.load(html);
-  $("script, style, noscript, svg, iframe, nav, footer, header").remove();
-  // Prefer main/article if present
-  const main = $("main, article, [role='main']").first();
-  const root = main.length ? main : $("body");
+  $("script, style, noscript, svg, iframe").remove();
+  for (const sel of filter?.exclude ?? []) {
+    $(sel).remove();
+  }
   // Insert newlines for common block elements so words do not run together
   $("br").replaceWith("\n");
   $("p, div, li, tr, h1, h2, h3, h4, h5, h6, section, article").each((_, el) => {
     $(el).append("\n");
   });
+  if (filter?.include?.length) {
+    const matched = $(filter.include.join(", "));
+    if (!matched.length) {
+      throw new Error(
+        `include selectors matched nothing: ${filter.include.join(", ")} (page layout changed?)`
+      );
+    }
+    // Skip elements nested inside another match so text is not duplicated.
+    const parts: string[] = [];
+    matched.each((_, el) => {
+      if ($(el).parents().filter((__, p) => matched.is(p)).length === 0) {
+        parts.push($(el).text());
+      }
+    });
+    return normalizeText(parts.join("\n"));
+  }
+  $("nav, footer, header").remove();
+  // Prefer main/article if present
+  const main = $("main, article, [role='main']").first();
+  const root = main.length ? main : $("body");
   const text = root.text() || $.root().text();
   return normalizeText(text);
+}
+
+/** HTML or plain/feed text → filtered text (pure; used by fetchNormalized and tests). */
+export function applySourceFilter(text: string, filter?: SourceFilter): string {
+  return normalizeText(applyIgnorePatterns(text, filter?.ignore));
 }
 
 function extractFeedText(xml: string): string {
@@ -156,7 +192,7 @@ function extractFeedText(xml: string): string {
 export async function fetchNormalized(
   url: string,
   sourceKind: SourceKind,
-  opts: { userAgent?: string; delayMs?: number } = {}
+  opts: { userAgent?: string; delayMs?: number; filter?: SourceFilter } = {}
 ): Promise<{ text: string; contentType: string; finalUrl: string }> {
   if (opts.delayMs && opts.delayMs > 0) {
     await sleep(opts.delayMs);
@@ -185,13 +221,13 @@ export async function fetchNormalized(
     ) {
       text = extractFeedText(body);
     } else {
-      text = extractHtmlMainText(body);
+      text = extractHtmlMainText(body, opts.filter);
     }
   } else if (ct.includes("html") || /<html[\s>]/i.test(body.slice(0, 1000))) {
-    text = extractHtmlMainText(body);
+    text = extractHtmlMainText(body, opts.filter);
   } else {
     text = normalizeText(body);
   }
 
-  return { text, contentType, finalUrl };
+  return { text: applySourceFilter(text, opts.filter), contentType, finalUrl };
 }

@@ -11,10 +11,22 @@ export interface CompetitorSources {
   pricing?: string;
 }
 
+/** Per-source extraction filters applied before diffing (see src/filters.ts). */
+export interface SourceFilter {
+  /** CSS selectors; when set, only text inside matching elements is kept. */
+  include?: string[];
+  /** CSS selectors removed before text extraction. */
+  exclude?: string[];
+  /** Regex patterns; matching text lines are dropped. Case-insensitive unless `/re/flags`. */
+  ignore?: string[];
+}
+
 export interface Competitor {
   id: string;
   name: string;
   sources: CompetitorSources;
+  /** Optional per-source include/exclude selectors and ignore patterns. */
+  filters?: Partial<Record<SourceKind, SourceFilter>>;
   notes?: string;
 }
 
@@ -35,6 +47,8 @@ export interface Snapshot {
   text: string;
   /** Content hash for quick equality checks. */
   hash: string;
+  /** Hash of the source filter used to extract `text` ("" or absent = none). */
+  filterKey?: string;
 }
 
 export interface ChangeRecord {

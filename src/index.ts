@@ -4,7 +4,14 @@ export { meaningfulDiff, contentHash } from "./diff.js";
 export { verifySemanticChange } from "./verify.js";
 export type { SemanticVerdict } from "./verify.js";
 export { classifyChange, summarizeChangeLocally } from "./classify.js";
-export { fetchNormalized, assertAllowedUrl, normalizeText } from "./fetch.js";
+export {
+  fetchNormalized,
+  assertAllowedUrl,
+  normalizeText,
+  extractHtmlMainText,
+  applySourceFilter,
+} from "./fetch.js";
+export { parseSourceFilter, applyIgnorePatterns, filterKey } from "./filters.js";
 export { runCheck } from "./check.js";
 export { buildDigest } from "./digest.js";
 export { Store } from "./store.js";
