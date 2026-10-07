@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "check": "tsc --noEmit",
-    "test": "tsx --test tests/diff.test.ts tests/classify.test.ts tests/fetch-allow.test.ts tests/verify.test.ts",
+    "test": "tsx --test tests/diff.test.ts tests/classify.test.ts tests/fetch-allow.test.ts tests/verify.test.ts tests/filters.test.ts",
     "cli": "tsx src/cli.ts",
     "mcp": "tsx src/mcp-server.ts",
     "start": "tsx src/cli.ts"

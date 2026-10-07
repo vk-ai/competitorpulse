@@ -11,6 +11,7 @@ import { contentHash, meaningfulDiff } from "./diff.js";
 import { verifySemanticChange } from "./verify.js";
 import { classifyChange, summarizeChangeLocally } from "./classify.js";
 import { fetchNormalized } from "./fetch.js";
+import { filterKey } from "./filters.js";
 import { buildDigest } from "./digest.js";
 import { Store } from "./store.js";
 
@@ -31,13 +32,16 @@ async function checkSource(
   store: Store
 ): Promise<{ change: ChangeRecord | null; error?: string }> {
   try {
+    const filter = competitor.filters?.[sourceKind];
     const { text, finalUrl } = await fetchNormalized(url, sourceKind, {
       userAgent: config.userAgent,
       delayMs: config.fetchDelayMs,
+      filter,
     });
     const hash = contentHash(text);
     const prev = store.loadSnapshot(competitor.id, sourceKind);
     const now = new Date().toISOString();
+    const fKey = filterKey(filter);
 
     const snapshot: Snapshot = {
       competitorId: competitor.id,
@@ -46,9 +50,14 @@ async function checkSource(
       fetchedAt: now,
       text,
       hash,
+      ...(fKey ? { filterKey: fKey } : {}),
     };
 
-    if (!prev) {
+    // Filters changed since the last snapshot: the extracted text is not
+    // comparable, so re-baseline instead of reporting a giant diff.
+    const filtersChanged = prev !== null && (prev.filterKey ?? "") !== fKey;
+
+    if (!prev || filtersChanged) {
       store.saveSnapshot(snapshot);
       const change: ChangeRecord = {
         id: randomUUID(),
@@ -58,7 +67,9 @@ async function checkSource(
         url: finalUrl || url,
         category: classifyChange(sourceKind, text, ""),
         detectedAt: now,
-        summary: `Baseline captured for ${sourceKind}`,
+        summary: filtersChanged
+          ? `Filters changed for ${sourceKind}; new baseline captured`
+          : `Baseline captured for ${sourceKind}`,
         diffExcerpt: text.slice(0, 400),
         isBaseline: true,
       };

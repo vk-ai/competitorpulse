@@ -29,3 +29,13 @@ competitors:
     sources:
       website: "https://example.net"
       changelog: "https://example.net"
+
+# Per-source filters (object form). Plain URL strings above stay valid.
+#  - id: acme
+#    name: Acme
+#    sources:
+#      pricing:
+#        url: "https://acme.example/pricing"
+#        include: [".pricing-table"]          # CSS selectors to keep
+#        exclude: [".testimonials"]           # CSS selectors to drop first
+#        ignore: ["^Last updated", "\\d+ customers"]  # regex; matching lines dropped
